@@ -48,4 +48,17 @@ lrn14 <- filter(lrn14, points > 0)
 
 #now dim(lrn14) > 166 8
 
+#__________________________________________
+# WRITING THE NEW DATA TO A DATA FILE and checking that looking ok
+# first setting the working directory to IODS project folder
+setwd("~/Documents/IODS/IODS-project")
+
+write.csv(lrn14, "data/learning2014")
+
+#reading the newly created csv file into a data frame
+test <- read.csv("data/learning2014", row.names = 1)
+str(test)
+head(test)
+
+#looking great!
 
