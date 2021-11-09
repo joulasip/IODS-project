@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# Week 2: Regression and model validation
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -10,4 +10,48 @@
 date()
 ```
 
-Here we go again...
+## 1 Description of the data
+
+The data includes survey results from statistics course students in Finland regarding
+their learning. Data is collected 2014-2015. After combining variables that measure the same dimension and excluding observations where the exam points are zero, the data consists of **166 observations and 7 variables** listed here: 
+
+* gender
+* age
+* attitude
+* deep approach (maximized understanding with a true commitment)
+* surface approach (memorizing without understanding)
+* strategic approach (applying strategy to maximize learning)
+* points (max points)
+
+The three learning approaches combine **8 subscales** that all include 4 questions:
+
+* deep: Seeking meaning, relating ideas, use of evidence
+* surface: lack of purpose, unrelated memorizing, syllabus-boundness
+* strategic: organized studying, time management
+
+Reading the data and checking the structure (working diary being IODS-project):
+
+```{r}
+data <- read.csv("data/learning2014", row.names = 1)
+str(data)
+```
+
+
+## 2 Graphical overview of the data
+
+Summary of the data --- basic statistics of the variables:
+
+```{r}
+summary(data)
+```
+
+
+Graphical overview using libraries GGally and ggplot2. The first variable, gender, is defining the colour:
+
+```{r}
+library(ggplot2)
+library(GGally)
+p <- ggpairs(data, mapping = aes(col=data$gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+p
+```
+
