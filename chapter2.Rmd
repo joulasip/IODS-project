@@ -56,7 +56,27 @@ p <- ggpairs(data, mapping = aes(col=data$gender, alpha = 0.3), lower = list(com
 p
 ```
 
-### Interpretation:
+The correlation coefficient, corr, refers to Pearson correlation by default --- correlations equal to +1 or −1 correspond to data points lying exactly on a line. Stars in the end the correlation value represent the p-values (as explained [here](https://ggobi.github.io/ggally/reference/ggally_cor.html)): 
+
+* "***" p < 0.001
+* "**" p < 0.01
+* "*" p < 0.05
+* "." p < 0.10
+
+#### Interpretation:
+
+There are almost twice as many female students than male. Majority of the students are between 20 and 30 years old. Male students have generally better attitude than female.
+
+Points and attitude have the highest positive correlation 0.437, which is also significant (p < 0.001). Highest significant negative correlation can be seen between surface and deep learning approaches with corr = -0.324 (male up to -0.622). This is to be expected since they could be considered the opposite. 
+
+Strategic learning approach is slightly more common among female students than male. 
+
+Less significant negative correlation can be seen between surface and strategic learning approaches, corr = -0.161, and between surface learning approach and attitude, corr = -0.176.
+
+The distribution of deep learning approach is shifted more towards higher values than with strategic or surface approach. The mean and median are approx. 3.6 --- for strategic approach approx 3.1 and surface approach 2.8.
+
+To me it seems odd, that the points do not correlate with deep learning approach at all. **Could this mean that the exam/assignments do not measure the deep learning? Or that the deep learning approach does not in fact lead to learning?** There is more evidence (all though no significance shown) that the surface learning approach has some negative correlation and strategic approach positive with the points.
+
 
 
 
