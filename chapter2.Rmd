@@ -1,6 +1,6 @@
 # Week 2: Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+<br /> *Describe the work you have done this week and summarize your learning.*
 
 - Describe your work and results clearly. 
 - Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
@@ -10,10 +10,11 @@
 date()
 ```
 
+<br /> 
 
 ## 1 Description of the data
 
-The data includes survey results from statistics course students in Finland regarding
+<br /> The data includes survey results from statistics course students in Finland regarding
 their learning. Data is collected 2014-2015. After combining variables that measure the same dimension and excluding observations where the exam points are zero, the data consists of **166 observations and 7 variables** listed here: 
 
 * gender
@@ -37,10 +38,11 @@ data <- read.csv("data/learning2014", row.names = 1)
 str(data)
 ```
 
+<br /> 
 
 ## 2 Graphical overview of the data
 
-Summary of the data --- basic statistics of the variables:
+<br /> Summary of the data --- basic statistics of the variables:
 
 ```{r}
 summary(data)
@@ -63,6 +65,8 @@ The correlation coefficient, corr, refers to Pearson correlation by default --- 
 * "*" p < 0.05
 * "." p < 0.10
 
+<br /> 
+
 #### Interpretation:
 
 There are almost twice as many female students than male. Majority of the students are between 20 and 30 years old. Male students have generally better attitude than female.
@@ -77,6 +81,23 @@ The distribution of deep learning approach is shifted more towards higher values
 
 To me it seems odd, that the points do not correlate with deep learning approach at all. **Could this mean that the exam/assignments do not measure the deep learning? Or that the deep learning approach does not in fact lead to learning?** There is more evidence (all though no significance shown) that the surface learning approach has some negative correlation and strategic approach positive with the points.
 
+
+## 3 Multiple regression
+<br /> Since the points have a highly significant correlation with attitude and a slightly significant correlation with surface and strategic learning approaches, I have chosen those three for the multiple regression as explanatory variables to the target variable "points". 
+
+```{r}
+my_model_multi <- lm(points ~ attitude + stra + surf, data = data)
+summary(my_model_multi)
+```
+
+"comment and interpret the results. Explain and interpret the statistical test related to the model parameters. "
+
+<br /> Since only the attitude has a high significance (***), I will try making models with attitude and surface approach, and attitude and strategic approach. In the latter model (shown below) the strategic learning approach has p-value rather close to 0.05, and therefore I will choose this model to further analyze.
+
+```{r}
+my_model_2 <- lm(points ~ attitude + stra, data = data)
+summary(my_model_2)
+```
 
 
 

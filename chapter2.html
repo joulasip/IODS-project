@@ -169,17 +169,18 @@ pre code {
 
 <div id="week-2-regression-and-model-validation" class="section level1">
 <h1>Week 2: Regression and model validation</h1>
-<p><em>Describe the work you have done this week and summarize your learning.</em></p>
+<p><br /> <em>Describe the work you have done this week and summarize your learning.</em></p>
 <ul>
 <li>Describe your work and results clearly.</li>
 <li>Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.</li>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Tue Nov  9 13:03:53 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Wed Nov 10 10:52:52 2021&quot;</code></pre>
+<p><br /></p>
 <div id="description-of-the-data" class="section level2">
 <h2>1 Description of the data</h2>
-<p>The data includes survey results from statistics course students in Finland regarding their learning. Data is collected 2014-2015. After combining variables that measure the same dimension and excluding observations where the exam points are zero, the data consists of <strong>166 observations and 7 variables</strong> listed here:</p>
+<p><br /> The data includes survey results from statistics course students in Finland regarding their learning. Data is collected 2014-2015. After combining variables that measure the same dimension and excluding observations where the exam points are zero, the data consists of <strong>166 observations and 7 variables</strong> listed here:</p>
 <ul>
 <li>gender</li>
 <li>age</li>
@@ -206,10 +207,11 @@ str(data)</code></pre>
 ##  $ stra    : num  3.38 2.75 3.62 3.12 3.62 ...
 ##  $ surf    : num  2.58 3.17 2.25 2.25 2.83 ...
 ##  $ points  : int  25 12 24 10 22 21 21 31 24 26 ...</code></pre>
+<p><br /></p>
 </div>
 <div id="graphical-overview-of-the-data" class="section level2">
 <h2>2 Graphical overview of the data</h2>
-<p>Summary of the data — basic statistics of the variables:</p>
+<p><br /> Summary of the data — basic statistics of the variables:</p>
 <pre class="r"><code>summary(data)</code></pre>
 <pre><code>##     gender               age           attitude          deep      
 ##  Length:166         Min.   :17.00   Min.   :1.400   Min.   :1.583  
@@ -241,6 +243,7 @@ p</code></pre>
 <li>“*” p &lt; 0.05</li>
 <li>“.” p &lt; 0.10</li>
 </ul>
+<p><br /></p>
 <div id="interpretation" class="section level4">
 <h4>Interpretation:</h4>
 <p>There are almost twice as many female students than male. Majority of the students are between 20 and 30 years old. Male students have generally better attitude than female.</p>
@@ -250,6 +253,55 @@ p</code></pre>
 <p>The distribution of deep learning approach is shifted more towards higher values than with strategic or surface approach. The mean and median are approx. 3.6 — for strategic approach approx 3.1 and surface approach 2.8.</p>
 <p>To me it seems odd, that the points do not correlate with deep learning approach at all. <strong>Could this mean that the exam/assignments do not measure the deep learning? Or that the deep learning approach does not in fact lead to learning?</strong> There is more evidence (all though no significance shown) that the surface learning approach has some negative correlation and strategic approach positive with the points.</p>
 </div>
+</div>
+<div id="multiple-regression" class="section level2">
+<h2>3 Multiple regression</h2>
+<p><br /> Since the points have a highly significant correlation with attitude and a slightly significant correlation with surface and strategic learning approaches, I have chosen those three for the multiple regression as explanatory variables to the target variable “points”.</p>
+<pre class="r"><code>my_model_multi &lt;- lm(points ~ attitude + stra + surf, data = data)
+summary(my_model_multi)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = points ~ attitude + stra + surf, data = data)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -17.1550  -3.4346   0.5156   3.6401  10.8952 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  11.0171     3.6837   2.991  0.00322 ** 
+## attitude      3.3952     0.5741   5.913 1.93e-08 ***
+## stra          0.8531     0.5416   1.575  0.11716    
+## surf         -0.5861     0.8014  -0.731  0.46563    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 5.296 on 162 degrees of freedom
+## Multiple R-squared:  0.2074, Adjusted R-squared:  0.1927 
+## F-statistic: 14.13 on 3 and 162 DF,  p-value: 3.156e-08</code></pre>
+<p>“comment and interpret the results. Explain and interpret the statistical test related to the model parameters.”</p>
+<p><br /> Since only the attitude has a high significance (***), I will try making models with attitude and surface approach, and attitude and strategic approach. In the latter model (shown below) the strategic learning approach has p-value rather close to 0.05, and therefore I will choose this model to further analyze.</p>
+<pre class="r"><code>my_model_2 &lt;- lm(points ~ attitude + stra, data = data)
+summary(my_model_2)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = points ~ attitude + stra, data = data)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -17.6436  -3.3113   0.5575   3.7928  10.9295 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   8.9729     2.3959   3.745  0.00025 ***
+## attitude      3.4658     0.5652   6.132 6.31e-09 ***
+## stra          0.9137     0.5345   1.709  0.08927 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 5.289 on 163 degrees of freedom
+## Multiple R-squared:  0.2048, Adjusted R-squared:  0.1951 
+## F-statistic: 20.99 on 2 and 163 DF,  p-value: 7.734e-09</code></pre>
 </div>
 </div>
 
