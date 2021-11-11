@@ -1,11 +1,5 @@
 # Week 2: Regression and model validation
 
-<br /> *Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
-
 ```{r}
 date()
 ```
@@ -90,14 +84,61 @@ my_model_multi <- lm(points ~ attitude + stra + surf, data = data)
 summary(my_model_multi)
 ```
 
-"comment and interpret the results. Explain and interpret the statistical test related to the model parameters. "
+<br /> The following formula describes the multiple linear model: 
 
-<br /> Since only the attitude has a high significance (***), I will try making models with attitude and surface approach, and attitude and strategic approach. In the latter model (shown below) the strategic learning approach has p-value rather close to 0.05, and therefore I will choose this model to further analyze.
+$y = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \varepsilon_i$
+
+where $\beta_0$ is the Intersept, $\beta_1$ regression coefficient (Estimate) for attitude, $\beta_2$ for strategic approach and $\beta_3$ for surface approach. These measure the change in the mean response associated with a change in the corresponding explanatory variable. $\varepsilon_i$ refers to the error terms (Std. Error) that are assumed to have a normal distribution with zero mean and the same variance $\sigma^2$ for all values of the explanatory variables (as explained in the course material book *Multivariate Analysis for the Behavioural Sciences*).
+
+<br /> The residuals (difference between an observed value of the target variable and the fitted value) have a median approx. 0.52. F-statistic gives a test of an omnibus null hypothesis that all the regression coefficients are zero, and it is calculated by dividing regression mean square (RGSM) by residual mean square (RMS). RMS gives an estimate of variance $\sigma^2$. **Since here F-statistic has a very low associated p-value (3.156e-08) it is very unlikely that all of the coefficients are zero --- as can be expected.**
+
+The t-values are obtained by dividing the estimated regression coefficient by the standard error of the estimate, and the associated significance levels (Pr(>|t|) in the table) can indicate the importance of the explanatory variable.
+
+<br /> According to the model, attitude has the strongest and the most significant (p < 0.001) positive correlation with the points. Since only the attitude has a high significance, I will try making models with attitude and surface approach, and attitude and strategic approach separately. The latter summary shown below. 
 
 ```{r}
 my_model_2 <- lm(points ~ attitude + stra, data = data)
 summary(my_model_2)
 ```
 
+## 4 Multiple R-squared and relationship between variables
 
+<br /> $R^2$ gives the proportion of variability in the target variable accounted for by the explanatory variables --- **in the first case approx. 21% of the variability in points is accounted for by these three explanatory variables: attitude, strategic learning approach and surface learning approach.** $R$ is a measure of the fit of the model, the multiple correlation coefficient.
+
+<br /> In the model with only attitude and strategic learning approach as explanatory variables, (shown above) the strategic approach has p-value of 0.09 so still below 0.1, so slightly better. In this model, according to $R^2$, approximately the same amount of the variability, 20%, can be explained by the combination of attitude and strategic approach than in the previous model with three explanatory variables. This gives confidence that the importance of surface learning approach is very insignificant.
+
+<br /> Let's still try how the model would look with only one explanatory variable, attitude. The resulted summary is shown below --- attitude alone counts for 19% of the variability in points.
+
+```{r}
+my_model_3 <- lm(points ~ attitude, data = data)
+summary(my_model_3)
+```
+
+It is important to note that the connections between the explanatory variables can also have a major effect on the model, and they need to be taken into account when deciding which variables to use and which leave out! Here the surface and strategic learning approaches do have small negative correlation according to the overview of the data (part 2) but still much less significant than the correlation between attitude and points, so I consider it not important.
+
+## 5 Diagnostic plots
+
+I will continue the analysis with the model including attitude and strategic learning approach as the explanatory variables.
+
+```{r}
+par(mfrow = c(2,2))
+plot(my_model_2, which = c(1,2,5))
+```
+
+<br /> The graph above includes the diagnostic plots: Residuals vs Fitted values, Normal QQ-plot and Residuals vs. Leverage.
+
+Assumptions of the model:
+
+- Linearity
+- Errors are normally distributed, not correlated and have a constant variance, $\sigma^2$
+
+<br /> **QQ-plot** allows exploring the normality assumption --- better the points fall into the line, better the assumption. The fit here is rather good especially in the middle, but there seem to be some outliers in both ends of the distribution that fall under the line.
+
+<br /> Constant variance of errors and them not being dependent on the values of the explanatory variables can be assessed with the **Residuals vs. fitted values** graph. Any pattern in the plot would mean issues with this assumption. Here the plot has no clear patterns but the same outliers are marked in this one as well --- the observations 145, 56 and 35 seem odd. Based on these two plots, I would look more deeply into those answers and would consider removing those observations all together if a clear reason for their behaviour is found.
+
+<br /> **Residuals vs leverage** graph helps to identify observations that have unusually high impact on the model. Here again few observations stand out, and they are marked with numbers --- 145 and 35 are there again. Since Cook's distance is slightly higher around the same leverage values, it means that these values have a rather large influence on the model and should therefore be looked into more.
+
+<br /> Overall the diagnostic plots look still quite good and the model can be considered valid. The same outliers are also present if the diagnostic plots are made for the model with only attitude as explanatory variable. Removing the outliers could lead to larger significance and clearer model results.
+
+<br /> 
 
