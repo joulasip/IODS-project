@@ -1,0 +1,179 @@
+# Week 3: Logistic regression
+
+```{r}
+date()
+```
+
+<br /> 
+
+## 1 Description of the data (1p)
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+
+alc <- read.csv("data/alc", row.names = 1)
+dim(alc)
+colnames(alc)
+
+```
+
+The data represents Portuguese secondary school students' performance including grades, demographic, social and school related features. It was collected by using school reports and questionnaires. Two subjects are combined here: Mathematics and Portuguese language. More information can be found here including explanations of all the variables listed above: https://archive.ics.uci.edu/ml/datasets/Student+Performance 
+
+'Alc_use' combines weekday (Dalc) and weekend (Walc) alcohol use. 'High_use' is defined as TRUE if 'alc_use' > 2 so students consumption of alcohol is defined high if they are using alcohol twice a week or more.
+
+<br />
+
+## 2 Hypothesis (1p)
+
+Variables that I assume having important correlation to alcohol consumption, and my hypothesis about the connection:
+
+* G3: final grade (numeric: from 0 to 20)
+  - "final grade is negatively correlated with alcohol consumption"
+* goout - going out with friends (numeric: from 1 - very low to 5 - very high)
+  - "going out with friends correlated strongly positively with alcohol consumption"
+* absences - number of school absences (numeric: from 0 to 93) 
+  - "absences can be a consequence of high alcohol consumption"
+* failures - number of past class failures (numeric: n if 1<=n<3, else 4)
+  - "alcohol consumption and failures would have a positive correlation"
+
+In addition, I will include gender as a divider in the graphs.
+
+<br />
+
+## 3 Numerical and Graphical exploration (5p)
+
+Glimpse to the selected data again:
+
+```{r}
+#select the wanted variables to check
+sel_alc <- select(alc,one_of(c("G3","goout","absences","failures")))
+glimpse(sel_alc)
+```
+
+<br /> Bar plots of the chosen variables:
+
+```{r,fig.dim= c(8,6)}
+gather(sel_alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
+```
+
+<br /> Initializing box plots of the varibles as high use in the x-axis and gender defining the colour:
+
+```{r}
+
+# initialize the plots for the 4 variables chosen
+g1 <- ggplot(alc, aes(x = high_use, y = G3, col = sex))
+g2 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
+g3 <- ggplot(alc, aes(x = high_use, y = goout, col = sex))
+g4 <- ggplot(alc, aes(x = high_use, y = failures, col = sex))
+
+```
+
+
+<br /> Drawing the box plots and producing summary statistics for each selected variable based on high use of alcohol and gender:
+
+```{r,fig.dim= c(5,4)}
+g1 + geom_boxplot() + ylab("grade") + ggtitle("Student grade by alcohol consumption and sex")
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_grade = mean(G3))
+```
+
+**Grades** SAY SOMETHING ABOUT THE HYPOTHESIS
+
+```{r,fig.dim= c(5,4)}
+g2 + geom_boxplot() + xlab("high use") + ggtitle("Student absences by alcohol consumption and sex")
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_absence = mean(absences))
+```
+
+**Absences** SAY SOMETHING ABOUT THE HYPOTHESIS
+
+```{r,fig.dim= c(5,4)}
+g3 + geom_boxplot() + ylab("going out") + ggtitle("Going out by alcohol consumption and sex")
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_goout = mean(goout))
+```
+
+**Going out** SAY SOMETHING ABOUT THE HYPOTHESIS
+
+```{r,fig.dim= c(5,4)}
+g4 + geom_boxplot() + xlab("high use") + ggtitle("Student failures out by alcohol consumption and sex")
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_fail = mean(failures))
+```
+
+**Failures** SAY SOMETHING ABOUT THE HYPOTHESIS
+
+<br />
+
+## 4 Logistic regression (5p)
+
+Statistically exploring the data with logistic regression:
+
+```{r,fig.dim= c(5,4)}
+m <- glm(high_use ~ failures + absences + G3 + goout, data = alc, family = "binomial")
+summary(m)
+coef(m)
+
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(m) %>% exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+
+<br />
+
+## 5 Predictive power of the model (3p)
+
+For this exploration I will include the variables 'absences', 'goout' and 'failures' since they have statistical relationship with high use of alcohol according to the model above.
+
+```{r,fig.dim= c(5,4)}
+m2 <- glm(high_use ~ absences + goout + failures, data = alc, family = "binomial")
+
+# predict() the probability of high_use
+probabilities <- predict(m2, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probability > 0.5)
+
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc, absences, goout, failures, high_use, probability, prediction) %>% tail(10)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+
+```{r,fig.dim= c(5,4)}
+# initialize a plot of 'high_use' versus 'probability' in 'alc'
+g <- ggplot(alc, aes(x = probability, y = high_use, col = prediction))
+
+# define the geom as points and draw the plot
+g + geom_point()
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+```
+
+
+<br /> SAY SOMETHING HERE
+
+<br />
+
+## 6 10-fold cross-validation (Bonus 2p)
+
+
+<br />
+
+## 7 Cross-validation of different sets of predictors (Super-Bonus 4p)
+
+```{r,fig.dim= c(5,4)}
+
+```
+
+
