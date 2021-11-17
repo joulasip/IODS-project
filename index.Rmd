@@ -7,8 +7,8 @@ output:
     toc: true
     toc_depth: 2
     fig_caption: true
-    fig_width: 9
-    fig_height: 7
+    #fig_width: 9
+    #fig_height: 7
 ---
 
 ***
@@ -23,6 +23,12 @@ output:
   
 ```{r child = "chapter2.Rmd"}
 # This will include Chapter 2 (that is updated in its own file) in the document.
+```
+
+***
+
+```{r child = "chapter3.Rmd"}
+# This will include Chapter 3 (that is updated in its own file) in the document.
 ```
 
 ***

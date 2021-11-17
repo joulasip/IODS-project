@@ -23,7 +23,7 @@ colnames(alc)
 
 The data represents Portuguese secondary school students' performance including grades, demographic, social and school related features. It was collected by using school reports and questionnaires. Two subjects are combined here: Mathematics and Portuguese language. More information can be found here including explanations of all the variables listed above: https://archive.ics.uci.edu/ml/datasets/Student+Performance 
 
-'Alc_use' combines weekday (Dalc) and weekend (Walc) alcohol use. 'High_use' is defined as TRUE if 'alc_use' > 2 so students consumption of alcohol is defined high if they are using alcohol twice a week or more.
+'Alc_use' combines weekday (Dalc) and weekend (Walc) alcohol use. 'High_use' is defined as TRUE if 'alc_use' > 2, so students consumption of alcohol is defined high if they are using alcohol twice a week or more.
 
 <br />
 
@@ -37,8 +37,8 @@ Variables that I assume having important correlation to alcohol consumption, and
   - "going out with friends correlated strongly positively with alcohol consumption"
 * absences - number of school absences (numeric: from 0 to 93) 
   - "absences can be a consequence of high alcohol consumption"
-* failures - number of past class failures (numeric: n if 1<=n<3, else 4)
-  - "alcohol consumption and failures would have a positive correlation"
+* age - student's age (numeric: from 15 to 22)
+  - "alcohol consumption have a positive correlation with "
 
 In addition, I will include gender as a divider in the graphs.
 
@@ -50,7 +50,7 @@ Glimpse to the selected data again:
 
 ```{r}
 #select the wanted variables to check
-sel_alc <- select(alc,one_of(c("G3","goout","absences","failures")))
+sel_alc <- select(alc,one_of(c("G3","goout","absences","age")))
 glimpse(sel_alc)
 ```
 
@@ -60,45 +60,44 @@ glimpse(sel_alc)
 gather(sel_alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
 ```
 
-<br /> Initializing box plots of the varibles as high use in the x-axis and gender defining the colour:
+<br /> Making box plots of the variables as high use in the x-axis and gender defining the colour:
 
-```{r}
+```{r,fig.dim= c(9,7)}
+library(cowplot)
 
 # initialize the plots for the 4 variables chosen
-g1 <- ggplot(alc, aes(x = high_use, y = G3, col = sex))
-g2 <- ggplot(alc, aes(x = high_use, y = absences, col = sex))
-g3 <- ggplot(alc, aes(x = high_use, y = goout, col = sex))
-g4 <- ggplot(alc, aes(x = high_use, y = failures, col = sex))
+g1 <- ggplot(alc, aes(x = high_use, y = G3, col = sex)) + geom_boxplot() + ylab("grade") + xlab("high use") + ggtitle("Student grade by alcohol consumption and sex")
+g2 <- ggplot(alc, aes(x = high_use, y = absences, col = sex)) + geom_boxplot() + xlab("high use") + ggtitle("Student absences by alcohol consumption and sex")
+g3 <- ggplot(alc, aes(x = high_use, y = goout, col = sex)) + geom_boxplot() + ylab("going out") + xlab("high use") + ggtitle("Going out by alcohol consumption and sex")
+g4 <- ggplot(alc, aes(x = high_use, y = age, col = sex)) + geom_boxplot() + xlab("high use") + ggtitle("Student age by alcohol consumption and sex")
+
+plot_grid(g1,g2,g3,g4)
 
 ```
 
 
-<br /> Drawing the box plots and producing summary statistics for each selected variable based on high use of alcohol and gender:
+<br /> Producing summary statistics for each selected variable based on high use of alcohol and gender:
 
-```{r,fig.dim= c(5,4)}
-g1 + geom_boxplot() + ylab("grade") + ggtitle("Student grade by alcohol consumption and sex")
+```{r}
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_grade = mean(G3))
 ```
 
 **Grades** SAY SOMETHING ABOUT THE HYPOTHESIS
 
-```{r,fig.dim= c(5,4)}
-g2 + geom_boxplot() + xlab("high use") + ggtitle("Student absences by alcohol consumption and sex")
+```{r}
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_absence = mean(absences))
 ```
 
 **Absences** SAY SOMETHING ABOUT THE HYPOTHESIS
 
-```{r,fig.dim= c(5,4)}
-g3 + geom_boxplot() + ylab("going out") + ggtitle("Going out by alcohol consumption and sex")
+```{r}
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_goout = mean(goout))
 ```
 
 **Going out** SAY SOMETHING ABOUT THE HYPOTHESIS
 
-```{r,fig.dim= c(5,4)}
-g4 + geom_boxplot() + xlab("high use") + ggtitle("Student failures out by alcohol consumption and sex")
-alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_fail = mean(failures))
+```{r}
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_fail = mean(age))
 ```
 
 **Failures** SAY SOMETHING ABOUT THE HYPOTHESIS
