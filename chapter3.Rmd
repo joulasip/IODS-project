@@ -13,6 +13,7 @@ date()
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(boot)
 
 
 alc <- read.csv("data/alc", row.names = 1)
@@ -38,7 +39,7 @@ Variables that I assume having important correlation to alcohol consumption, and
 * absences - number of school absences (numeric: from 0 to 93) 
   - "absences can be a consequence of high alcohol consumption"
 * age - student's age (numeric: from 15 to 22)
-  - "alcohol consumption have a positive correlation with "
+  - "younger students use more alcohol"
 
 In addition, I will include gender as a divider in the graphs.
 
@@ -59,6 +60,10 @@ glimpse(sel_alc)
 ```{r,fig.dim= c(8,6)}
 gather(sel_alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
 ```
+
+Small amount of absences are common and only very few students have more than 10 absences. Most studetns are between 15 and 18 years ols and only few are older. Grades seem to follow normal distribution that is somewhat shifted towards better scores --- 10 and 12 are the most received grades. Going out with friends is also quite normally distributed --- most students responded with 3 or 2.
+
+***
 
 <br /> Making box plots of the variables as high use in the x-axis and gender defining the colour:
 
@@ -82,25 +87,33 @@ plot_grid(g1,g2,g3,g4)
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_grade = mean(G3))
 ```
 
-**Grades** SAY SOMETHING ABOUT THE HYPOTHESIS
+**Grades:** I hypothesized that the grades would be negatively affected by alcohol use. According to the box plot and the mean grade shown above, this is true only for male students --- males not using too much alcohol have higher average grade than females (using alcohol often or not) and the males using alcohol often have notably lower average grade than females. The box plot shows that some male students have received very low grades in case of high alcohol consumption, which brings the average down quite a lot. For female students the variance is smaller, and no outliers are present (see box plot).
+
+***
 
 ```{r}
-alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_absence = mean(absences))
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_absences = mean(absences))
 ```
 
-**Absences** SAY SOMETHING ABOUT THE HYPOTHESIS
+**Absences:** I assumed that the higher alcohol use would lead to absences. For both genders this seems to hold true. Male students not using alcohol have very low average of absences, only 2.9, so the difference to the high alcohol users is very clear, approx 3 more days of absences. With female students the difference is approx. 2.6 days. Female students have more absences in general and there are several students with much higher number of absences than the average --- all the way to more than 40.
+
+***
 
 ```{r}
 alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_goout = mean(goout))
 ```
 
-**Going out** SAY SOMETHING ABOUT THE HYPOTHESIS
+**Going out:** The box plot for going out looks a bit odd due to the likert scale. Median among the less alcohol using students is 3 and those using more than twise a week 4 (male and female). Here also the hypothesis holds. Difference between the mean values is larger for male students according to the summary statistics above. Students going out more are also consuming more alcohol, which makes a lot of sense.
+
+***
 
 ```{r}
-alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_fail = mean(age))
+alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_age = mean(age))
 ```
 
-**Failures** SAY SOMETHING ABOUT THE HYPOTHESIS
+**Age:** Mean age of those using alcohol many times a week is slightly smaller for female students and higher for male students than the age of non-alcohol users. This shows clearly in the median in the box plot. Female students maybe start drinking earlier than male students. It seems to hold true to some extent that younger students drink more --- however, the students are generally quite young as shown in the bar plots earlier.
+
+***
 
 <br />
 
@@ -109,7 +122,7 @@ alc %>% group_by(sex, high_use) %>% summarise(count = n(), mean_fail = mean(age)
 Statistically exploring the data with logistic regression:
 
 ```{r,fig.dim= c(5,4)}
-m <- glm(high_use ~ failures + absences + G3 + goout, data = alc, family = "binomial")
+m <- glm(high_use ~ age + absences + G3 + goout, data = alc, family = "binomial")
 summary(m)
 coef(m)
 
@@ -123,14 +136,20 @@ CI <- confint(m) %>% exp
 cbind(OR, CI)
 ```
 
+Odds ratios (OR) tell about the odds of high use of alcohol based on the explanatory variable. If the value is over 1, there is a positive effect of the explanatory variable to the target variable (high use). In this case, age, absences and going out increase the changes of high alcohol use, and alcohol use and grades have negative association. However, as the significance test in the model summary shows, only absences and going out have a statistical significance in the model.
+
+In case the value 1 is between the confidence intervals (CI), there is no evidence of an association between the variables. In this case, only the confidence intervals of absences and going out don't include the value 1, which means that those two variables and high alcohol use have association.
+
+When it comes to the hypothesis before, this goes together with the previous analysis based on box plots. Absences have a clear positive correlation with the high alcohol use, as does going out with friends. Based on the previous, this model would look different regarding the grades if it was made for male students separately, whose grades were notably lower if they were using alcohol more than twice a week.
+
 <br />
 
 ## 5 Predictive power of the model (3p)
 
-For this exploration I will include the variables 'absences', 'goout' and 'failures' since they have statistical relationship with high use of alcohol according to the model above.
+For this exploration I will include the variables 'absences' and 'goout' according to the analysis above. Here I will use the model to predict the the actual values, and save and compare the predictions to the actual values. In case probability is larger than 0.5, the high use is considered TRUE.
 
 ```{r,fig.dim= c(5,4)}
-m2 <- glm(high_use ~ absences + goout + failures, data = alc, family = "binomial")
+m2 <- glm(high_use ~ absences + goout, data = alc, family = "binomial")
 
 # predict() the probability of high_use
 probabilities <- predict(m2, type = "response")
@@ -142,11 +161,17 @@ alc <- mutate(alc, probability = probabilities)
 alc <- mutate(alc, prediction = probability > 0.5)
 
 # see the last ten original classes, predicted probabilities, and class predictions
-select(alc, absences, goout, failures, high_use, probability, prediction) %>% tail(10)
+select(alc, absences, goout, high_use, probability, prediction) %>% tail(10)
 
 # tabulate the target variable versus the predictions
 table(high_use = alc$high_use, prediction = alc$prediction)
 ```
+
+The table of the last ten values shows that the model has predicted all of these cases to not have high alcohol consumption based on absences and going out, but the actual observations have 7/10 high alcohol usage. This model is clearly not perfect. Still the table of target variable vs. predictions shows that most cases are predicted correctly by the model.
+
+***
+
+Then I plot the predictions against the actual values (graphic visualization). If the model was perfect in predicting the actual values, the upper line would have dots only on the right side (probability > 0.5) and lower line only on the left side.
 
 ```{r,fig.dim= c(5,4)}
 # initialize a plot of 'high_use' versus 'probability' in 'alc'
@@ -157,22 +182,30 @@ g + geom_point()
 
 # tabulate the target variable versus the predictions
 table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+
 ```
 
-
-<br /> SAY SOMETHING HERE
+According to the table, approximately 26 % of the predictions went wrong (the training error).
 
 <br />
 
 ## 6 10-fold cross-validation (Bonus 2p)
 
-
-<br />
-
-## 7 Cross-validation of different sets of predictors (Super-Bonus 4p)
-
 ```{r,fig.dim= c(5,4)}
 
+# define a loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
 ```
 
+The average number of wrong predictions in the cross validation is aroun 0.24-0.26 (changes with each run). Therefore the model's prediction capabilities are very close to the model at Datacamp.
 
+<br /> **END OF WEEK 3!**
+<br />
