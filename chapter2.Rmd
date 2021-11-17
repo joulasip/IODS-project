@@ -45,7 +45,7 @@ summary(data)
 
 Graphical overview using libraries GGally and ggplot2. The first variable, gender, is defining the colour and alpha sets transparency in the graphs so that the overlapping data can be seen:
 
-```{r}
+```{r,fig.dim= c(8,6)}
 library(ggplot2)
 library(GGally)
 p <- ggpairs(data, mapping = aes(col=data$gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
@@ -120,7 +120,7 @@ It is important to note that the connections between the explanatory variables c
 
 I will continue the analysis with the model including attitude and strategic learning approach as the explanatory variables.
 
-```{r}
+```{r,fig.dim= c(8,6)}
 par(mfrow = c(2,2))
 plot(my_model_2, which = c(1,2,5))
 ```
