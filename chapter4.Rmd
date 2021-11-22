@@ -1,0 +1,225 @@
+# Week 4: Clustering and Classification
+
+```{r}
+date()
+```
+
+<br /> 
+
+## 1 Description of the data (1p)
+
+The data represents Housing Values in Suburbs of Boston from the 70s. Loading the data and taking a look at the data:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(boot)
+library(MASS)
+library(corrplot)
+
+# load the data
+data(Boston)
+head(Boston)
+
+dim(Boston)
+
+```
+
+There are 506 observations and the following 14 variables: 
+
+* crim: pre capita crime rate by town 
+* zn: proportion of residential land zoned for lots over 25,000 sq.ft
+* indus: proportion of non-retail business acres per town.
+* chas: Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+* nox: nitrogen oxides concentration (parts per 10 million).
+* rm: average number of rooms per dwelling.
+* age: proportion of owner-occupied units built prior to 1940.
+* dis: weighted mean of distances to five Boston employment centres.
+* rad: index of accessibility to radial highways.
+* tax: full-value property-tax rate per \$10,000.
+* ptratio: pupil-teacher ratio by town.
+* black: 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town.
+* lstat: lower status of the population (percent).
+* medv: median value of owner-occupied homes in \$1000s.
+
+<br /> 
+
+## 2 Graphical overview of the data (2p)
+
+Looking at the summary of the data:
+
+```{r}
+summary(Boston)
+```
+
+<br /> Making a correlation matrix and visualizing it:
+
+```{r,fig.dim= c(8,6)}
+
+# calculate the correlation matrix and round it
+cor_matrix <- cor(Boston) %>% round(digits = 2)
+
+cor_matrix
+
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+```
+
+Based on the visual overview the strongest negative correlation is between:
+
+* NO concentration and distance to employment centres
+* proportion of buildings built before 1940 and weighed mean distance to five employment centres
+* lower status of the population and median value of owner-occupied homes
+
+According to this it sounds like the employment centres produce NO emissions, which makes sense if they are based of heavy industry. Also the second is clear: areas with older buildings are built close to the work places and newer buildings are further away since the place is occupied already. More lower status population unsurprisingly correlates with lower value of owner-occupied homes.
+
+And the strongest positive correlation is between:
+
+* accessibility to radial highways and weighed mean distance to five employment centres
+* NO concentration and proportion of non-retail business acres per town
+
+These are following the earlier: the access to highways indicated smaller distance to employment centres and industry (non-retail) businesses emit NO emissions.
+
+<br /> 
+
+## 3 Standardizing the data and categorizing crime rate (2p)
+
+```{r,fig.dim= c(8,6)}
+
+#centre and standardize variables
+boston_scaled <- scale(Boston)
+
+summary(boston_scaled)
+
+boston_scaled <- as.data.frame(boston_scaled)
+
+```
+
+The mean of the variables is now zero since the standardizing includes dividing all the variables with their means. 
+
+<br /> Next I will create a factor variable of crime rate and remove the old one, as well as split the data into test and train sets for testing of predictions.
+
+```{r,fig.dim= c(8,6)}
+
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, labels = c("low","med_low","med_high","high"))
+
+# removing the old crime rate variable
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# adding the new categorized crime rate variable to the standardized dataset
+boston_scaled <- data.frame(boston_scaled, crime)
+
+# number of rows 
+n <- nrow(boston_scaled)
+
+# choosing randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# creating the train set
+train <- boston_scaled[ind,]
+
+# ... and the test set 
+test <- boston_scaled[-ind,]
+
+```
+
+
+## 4 Linear discriminant analysis (3p)
+
+Then I will fit the linear discriminant analysis to the train data with crime rate as the target variable and all the other variables as predictor variables. 
+
+```{r,fig.dim= c(8,6)}
+# linear discriminant analysis
+lda.fit <- lda(crime ~ ., data = train)
+
+# print the lda.fit object
+lda.fit
+```
+
+<br /> The following represent the LDA biplot:
+
+```{r,fig.dim= c(8,6)}
+# making arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plotting the results with arrows
+plot(lda.fit, dimen = 2,col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+
+```
+
+
+## 5 Prediction of classes (3p)
+
+The correct classes from the test data are saved and then removed here:
+
+```{r,fig.dim= c(8,6)}
+# saving the correct classes from test data
+correct_classes <- test$crime
+
+# lastly remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+```
+
+<br /> Then I will use the LDA model for predicting the classes, and cross tabulate the results with the categories from the test set. 
+
+```{r,fig.dim= c(8,6)}
+lda.pred <- predict(lda.fit, newdata = test)
+
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+<br /> The category 'high' is very well predicted by the model. The observations belonging to the category 'low' are in most of the cases predicted as 'med-low'. In general the model seems pretty good, but due to randomness of defining the test and train groups, the model changes somewhat with every run and therefore the results vary as well. An average over many runs would be needed for more precise estimate of the performance of the model.
+
+<br />
+
+## 6 K-means (4p)
+
+I will load the Boston data again and standardize it, after which I will calculate the distances between the observations.
+
+```{r,fig.dim= c(8,6)}
+data('Boston')
+boston_scaled2 = scale(Boston)
+
+#calculating euclidean distance matrix
+dist_eu <- dist(Boston)
+summary(dist_eu)
+
+```
+
+<br /> Next the K-means algoritm with 2 clusters is run and the results visualized (only columns 6-10 are plotted to see the results better):
+
+```{r,fig.dim= c(8,6)}
+km <-kmeans(Boston, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(Boston[6:10], col = km$cluster)
+```
+
+Then 3 clusters instead of 2 is used, which looks good and clear groups can be seen:
+
+```{r,fig.dim= c(8,6)}
+km <-kmeans(Boston, centers = 3)
+
+# plot the Boston dataset with clusters
+pairs(Boston[6:10], col = km$cluster)
+```
+
+
+
+<br /> **END OF WEEK 4!**
+<br />
