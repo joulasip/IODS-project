@@ -76,10 +76,10 @@ According to this it sounds like the employment centres produce NO emissions, wh
 
 And the strongest positive correlation is between:
 
-* accessibility to radial highways and weighed mean distance to five employment centres
+* accessibility to radial highways and full-value property-tax rate per \$10,000
 * NO concentration and proportion of non-retail business acres per town
 
-These are following the earlier: the access to highways indicated smaller distance to employment centres and industry (non-retail) businesses emit NO emissions.
+These statements are also reasonable: the access to highways indicate higher property-tax rate and industry (non-retail) businesses emit NO emissions.
 
 <br /> 
 
@@ -162,6 +162,9 @@ lda.arrows(lda.fit, myscale = 2)
 
 ```
 
+LD1 is the first linear discriminant and the LD2 the second. What these exactly represent hopefully becomes clearer next week. The arrows show the direction and extent of the effect of each explanatory variable.
+
+<br />
 
 ## 5 Prediction of classes (3p)
 
@@ -193,10 +196,11 @@ I will load the Boston data again and standardize it, after which I will calcula
 
 ```{r,fig.dim= c(8,6)}
 data('Boston')
-boston_scaled2 = scale(Boston)
+boston_scaled2 <- scale(Boston)
+boston_scaled2 <- as.data.frame(boston_scaled2)
 
 #calculating euclidean distance matrix
-dist_eu <- dist(Boston)
+dist_eu <- dist(boston_scaled2)
 summary(dist_eu)
 
 ```
@@ -204,20 +208,21 @@ summary(dist_eu)
 <br /> Next the K-means algoritm with 2 clusters is run and the results visualized (only columns 6-10 are plotted to see the results better):
 
 ```{r,fig.dim= c(8,6)}
-km <-kmeans(Boston, centers = 2)
+km <-kmeans(boston_scaled2, centers = 2)
 
 # plot the Boston dataset with clusters
-pairs(Boston[6:10], col = km$cluster)
+pairs(boston_scaled2[6:10], col = km$cluster)
 ```
 
-Then 3 clusters instead of 2 is used, which looks good and clear groups can be seen:
+Then 3 clusters instead of 2 is used, which seems to bring something new to the clusterization. Rather clear groups can be seen here:
 
 ```{r,fig.dim= c(8,6)}
-km <-kmeans(Boston, centers = 3)
+km <-kmeans(boston_scaled2, centers = 3)
 
 # plot the Boston dataset with clusters
-pairs(Boston[6:10], col = km$cluster)
+pairs(boston_scaled2[6:10], col = km$cluster)
 ```
+
 
 
 
