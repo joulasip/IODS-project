@@ -53,7 +53,9 @@ Looking at the summary of the data:
 summary(Boston)
 ```
 
-<br /> Making a correlation matrix and visualizing it:
+***
+
+Making a correlation matrix and visualizing it:
 
 ```{r,fig.dim= c(8,6)}
 
@@ -98,7 +100,9 @@ boston_scaled <- as.data.frame(boston_scaled)
 
 The mean of the variables is now zero since the standardizing includes dividing all the variables with their means. 
 
-<br /> Next I will create a factor variable of crime rate and remove the old one, as well as split the data into test and train sets for testing of predictions.
+***
+
+Next I will create a factor variable of crime rate and remove the old one, as well as split the data into test and train sets for testing of predictions.
 
 ```{r,fig.dim= c(8,6)}
 
@@ -127,6 +131,7 @@ test <- boston_scaled[-ind,]
 
 ```
 
+<br />
 
 ## 4 Linear discriminant analysis (3p)
 
@@ -142,7 +147,7 @@ lda.fit
 
 <br /> The following represent the LDA biplot:
 
-```{r,fig.dim= c(8,6)}
+```{r,fig.dim= c(9,7)}
 # making arrows
 lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
   heads <- coef(x)
@@ -162,7 +167,7 @@ lda.arrows(lda.fit, myscale = 2)
 
 ```
 
-LD1 is the first linear discriminant and the LD2 the second. What these exactly represent hopefully becomes clearer next week. The arrows show the direction and extent of the effect of each explanatory variable.
+LD1 is the first linear discriminant and the LD2 the second. What these exactly represent hopefully becomes clearer next week. The arrows show the direction and extent of the effect of each explanatory variable: distance to the radial highways seems to be the strongest indicator of high crime rate. 
 
 <br />
 
@@ -186,7 +191,7 @@ lda.pred <- predict(lda.fit, newdata = test)
 table(correct = correct_classes, predicted = lda.pred$class)
 ```
 
-<br /> The category 'high' is very well predicted by the model. The observations belonging to the category 'low' are in most of the cases predicted as 'med-low'. In general the model seems pretty good, but due to randomness of defining the test and train groups, the model changes somewhat with every run and therefore the results vary as well. An average over many runs would be needed for more precise estimate of the performance of the model.
+<br /> The category 'high' is very well predicted by the model. The observations belonging to the category 'low' are often predicted as 'med-low'. In general the model seems pretty good, but due to randomness of defining the test and train groups, the model changes somewhat with every run and therefore the results vary as well. An average over many runs would be needed for more precise estimate of the performance of the model.
 
 <br />
 
@@ -197,6 +202,7 @@ I will load the Boston data again and standardize it, after which I will calcula
 ```{r,fig.dim= c(8,6)}
 data('Boston')
 boston_scaled2 <- scale(Boston)
+#making the data frame out of the data
 boston_scaled2 <- as.data.frame(boston_scaled2)
 
 #calculating euclidean distance matrix
@@ -205,26 +211,40 @@ summary(dist_eu)
 
 ```
 
-<br /> Next the K-means algoritm with 2 clusters is run and the results visualized (only columns 6-10 are plotted to see the results better):
+<br /> Next the K-means algoritm with 3 clusters is run and the results visualized (only columns 6-10 are plotted to see the results better):
 
-```{r,fig.dim= c(8,6)}
+```{r,fig.dim= c(9,7)}
+km <-kmeans(boston_scaled2, centers = 3)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled2[6:10], col = km$cluster)
+
+```
+
+```{r,fig.dim= c(6,5)}
+#finding the optimal number of clusters:
+set.seed(123)
+# determine the number of clusters
+k_max <- 10
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(boston_scaled2, k)$tot.withinss})
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+
+Around the x-value 2 in the previous plot, the the radical drop ends and therefore the optimal number of clusters is 2. This produces better groups:
+
+```{r,fig.dim= c(9,7)}
 km <-kmeans(boston_scaled2, centers = 2)
 
 # plot the Boston dataset with clusters
 pairs(boston_scaled2[6:10], col = km$cluster)
 ```
 
-Then 3 clusters instead of 2 is used, which seems to bring something new to the clusterization. Rather clear groups can be seen here:
+The clusters are the clearest in the variables rad (distance to the radial highways) and tax (property tax-rate). There is a well-separeted group of observations that all have same, very high value of rad. Same goes with the tax. These same observations (in the graph the red ones) appear close to each other also in the other variable pairs. They seem to also have high portion of old buildings, as well as short distance to employment centres. 
 
-```{r,fig.dim= c(8,6)}
-km <-kmeans(boston_scaled2, centers = 3)
-
-# plot the Boston dataset with clusters
-pairs(boston_scaled2[6:10], col = km$cluster)
-```
-
-
-
+The other variables not presented in the graph were checked but did not provide additional information for the interpretation of the results.
 
 <br /> **END OF WEEK 4!**
 <br />
