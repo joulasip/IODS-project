@@ -1,0 +1,80 @@
+# Week 5: Analysis of longitudinal data
+
+```{r}
+date()
+```
+
+<br /> 
+
+Note: As you read the data sets in your chapter6.Rmd you may have to factor the categorical variables again, as R may not recognise them automatically as factors.
+
+Note that you must SWAP the data sets! :) It is NOT a simple copy & paste of my book!
+
+## RATS (7p)
+
+<br /> *Implement the analyses of Chapter 8 of MABS using the RATS data. (0-7 points: 0-4 points for graphs or analysis results + 0-3 points for their interpretations)*
+
+```{r,fig.dim= c(8,6)}
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(tidyr)
+#library(boot)
+library(corrplot)
+library(FactoMineR)
+
+# load the data
+human <- read.csv("data/human.csv", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+
+# summaries of the variables
+summary(human)
+
+# graphical overview with 
+p <- ggpairs(human, lower = list(combo = wrap("facethist", bins = 20)))
+p
+
+```
+
+
+```{r,fig.dim= c(8,6)}
+#plotting the correlation matrix
+cor_matrix <- cor(human) %>% round(digits = 2)
+
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+
+```
+
+
+<br /> 
+
+## 2 BPRS (8p)
+
+<br /> *Implement the analyses of Chapter 9 of MABS using the BPRS data. (0-8 points: 0-4 points for graphs or analysis results + 0-4 points for their interpretations)*
+
+```{r,fig.dim= c(10,8)}
+pca_human <- prcomp(human)
+
+# making a summary of the PCA 
+s <- summary(pca_human)
+
+# printing rounded percentages of variance captured by each principal component
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+pca_pr
+# making the lables include the percentages
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot(pca_human, cex = c(0.8, 1),
+       col = c("cornsilk4", "darkgoldenrod"),
+       xlab = pc_lab[1],
+       ylab = pc_lab[2])
+
+```
+
+
+
+
+<br /> 
+
+<br /> **THE END!**
+<br />
