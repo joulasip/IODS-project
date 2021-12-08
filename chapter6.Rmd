@@ -1,4 +1,4 @@
-# Week 5: Analysis of longitudinal data
+# Week 6: Analysis of longitudinal data
 
 ```{r}
 date()
