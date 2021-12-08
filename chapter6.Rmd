@@ -6,72 +6,311 @@ date()
 
 <br /> 
 
-Note: As you read the data sets in your chapter6.Rmd you may have to factor the categorical variables again, as R may not recognise them automatically as factors.
 
-Note that you must SWAP the data sets! :) It is NOT a simple copy & paste of my book!
+## 1 RATS (7p)
 
-## RATS (7p)
 
-<br /> *Implement the analyses of Chapter 8 of MABS using the RATS data. (0-7 points: 0-4 points for graphs or analysis results + 0-3 points for their interpretations)*
+<br /> First we will take a look at data about rats and their nutrition. The data consists of body weight of three groups of rats measured over a 9-week period (64 days). The data was already converted from the wide to long format in the data wrangling part of the exercise. We start by reading the data in, and checking its structure. Variables ID and Group are changed to factors and the summary of the data shown. After that the data is drawn so that the groups of rats are in different graphs.
 
-```{r,fig.dim= c(8,6)}
+```{r,fig.dim= c(8,5)}
 library(dplyr)
 library(ggplot2)
 library(GGally)
 library(tidyr)
+library(lme4)
 #library(boot)
-library(corrplot)
-library(FactoMineR)
+#library(corrplot)
+#library(FactoMineR)
 
-# load the data
-human <- read.csv("data/human.csv", header = TRUE, stringsAsFactors = TRUE, row.names = 1)
+# load the data (saved in long form)
+RATSL <- read.table("data/RATS.txt", header = TRUE)
+
+#wide format (original data) for later use
+RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", sep = "\t", header = T)
+
+#checking the data structure
+str(RATSL)
+
+# making factors out of ID and Group variables
+RATSL$ID <- factor(RATSL$ID)
+RATSL$Group <- factor(RATSL$Group)
 
 # summaries of the variables
-summary(human)
+summary(RATSL)
 
-# graphical overview with 
-p <- ggpairs(human, lower = list(combo = wrap("facethist", bins = 20)))
-p
+# drawing the data, one group in one graph
+ggplot(RATSL, aes(x = Time, y = Weight, linetype = ID)) +
+  geom_line() + 
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) + 
+  scale_y_continuous(name = "Weight (grams)") + 
+  theme(legend.position = "none")
+
 
 ```
 
+Already these graphs shows that the groups have rather different values of weight. First group of rats is the lightest and the last group the heaviest overall. The group 2 has one rat that is throughout the time series, notably heavier than the others --- even the group 3 rats. Not surprisingly, the weight of all the rats is increasing during the test period of 9 weeks. 
+
+
+***
+
+<br /> Next the data will be standardized and same graph is produced again.
+
+```{r,fig.dim= c(8,5)}
+
+# standardizing the data
+RATSL <- RATSL %>%
+  group_by(Time) %>%
+  mutate(stdweight = (Weight - mean(Weight))/ sd(Weight)) %>%
+  ungroup()
+
+# drawing the standardized data
+ggplot(RATSL, aes(x = Time, y = stdweight, linetype = ID)) +
+  geom_line() + 
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) + 
+  scale_y_continuous(name = "Standardized weight") + 
+  theme(legend.position = "none")
+
+```
+
+Now the growing trend is not so clear anymore.
+
+***
+
+<br /> Then a summary graph of the data will be produced.
 
 ```{r,fig.dim= c(8,6)}
-#plotting the correlation matrix
-cor_matrix <- cor(human) %>% round(digits = 2)
 
-corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+# number of days, baseline (day 1) included
+n <- RATSL$Time %>% unique() %>% length()
+
+# summary data with mean and standard error of Weight by Group and time 
+RATSS <- RATSL %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(Weight), se = sd(Weight)/sqrt(n) ) %>%
+  ungroup()
+
+# taking a glimpse at the summary data
+glimpse(RATSS)
+
+# plotting the mean profiles with errorbars
+ggplot(RATSS, aes(x = Time, y = mean, linetype = Group, shape = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.9,0.4)) +
+  scale_x_continuous(name = "Time (days)", breaks = seq(0, 60, 10)) +
+  scale_y_continuous(name = "mean(Weight) +/- se(Weight)")
 
 ```
 
+All of the lines are clearly separated and do not overlap, which suggests a difference between the groups.
+
+***
+
+<br /> Then we're taking a summary measure approach looking into differences between groups, and producing boxplots of the mean values of each group. 
+
+```{r,fig.dim= c(8,6)}
+
+# creating a summary data by Group and ID with mean as the summary variable (excluding the baseline)
+RATSL8S <- RATSL %>%
+  filter(Time > 1) %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(Weight) ) %>%
+  ungroup()
+
+# glimpse the data
+glimpse(RATSL8S)
+
+# draw a boxplot of the mean versus Group
+ggplot(RATSL8S, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(Weight), 64 days")
+
+```
+
+From the graph above we can see that one of the mean values in Group 2 is notably higher than others --- this was visible already from the graphs including all the data. Let's leave that outlier out of the analysis to avoid bias it might cause to the conclusions.
+
+```{r,fig.dim= c(8,6)}
+
+# create a new data by filtering the outlier and adjust the ggplot code the draw the plot again with the new data
+RATSL8S1 <- RATSL8S %>% filter(mean < 570)
+
+ggplot(RATSL8S1, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(Weight), 64 days")
+
+```
+
+After removing the outlier, there is no overlap in any of the rats' weight lines with other groups than their own. To check the validity of the conclusion that there is significant difference between the groups, we will create a linear regression model with the baseline (starting point weight) and the group as explanatory variables to the mean weight variable, and compute the variance analysis.
+
+```{r,fig.dim= c(8,6)}
+
+# add the baseline from the original data as a new variable to the summary data
+RATSL8S2 <- RATSL8S %>%
+  mutate(baseline = RATS$WD1)
+
+# fit the linear model with the mean as the response 
+fit <- lm(mean ~ baseline + Group, data = RATSL8S2)
+
+# compute the analysis of variance table for the fitted model with anova()
+anova(fit)
+
+```
+
+The analysis shows that the baseline correlated strongly with the mean weight --- which makes sense --- and that the group has a slightly significant correlation with it --- 0.076 is at the border of not being significant, but is still something.
+
+***
 
 <br /> 
 
 ## 2 BPRS (8p)
 
-<br /> *Implement the analyses of Chapter 9 of MABS using the BPRS data. (0-8 points: 0-4 points for graphs or analysis results + 0-4 points for their interpretations)*
+<br /> Now we have a new data set at hand. It represents 40 male subjects that we receiving different treatment for eight weeks during which they were rated on the brief psychiatric rating scale (BPRS) --- once before the treatment and then weekly. The scale is used to evaluate whether or not the pacient has schizophrenia.
 
-```{r,fig.dim= c(10,8)}
-pca_human <- prcomp(human)
+First we will take a look at the data, change variables treatment and subject into factors, and make a graph showing the time series of the two treatment groups.
 
-# making a summary of the PCA 
-s <- summary(pca_human)
+```{r,fig.dim= c(8,6)}
 
-# printing rounded percentages of variance captured by each principal component
-pca_pr <- round(100*s$importance[2, ], digits = 1)
-pca_pr
-# making the lables include the percentages
-pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+# load the data (saved in long form)
+BPRSL <- read.table("data/BPRS.txt", header = TRUE)
 
-# draw a biplot
-biplot(pca_human, cex = c(0.8, 1),
-       col = c("cornsilk4", "darkgoldenrod"),
-       xlab = pc_lab[1],
-       ylab = pc_lab[2])
+#checking the data structure
+str(BPRSL)
+
+# making factors out of treatment and subject variables
+BPRSL$treatment <- factor(BPRSL$treatment)
+BPRSL$subject <- factor(BPRSL$subject)
+
+# summaries of the variables
+summary(BPRSL)
+
+# graph showing all the data
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(BPRSL$bprs), max(BPRSL$bprs)))
 
 ```
 
+There seem to be a downward trend in the BPRS during the study with almost all the patients. Also the lower values in the beginning seem to lead to smaller values in the end as well. However, the differences are large between the subjects.
 
+***
+
+<br /> It's time to look at some different models of the data. First we will fit a *linear mixed model* to the data **without** taking the into account the repeated nature of the data.
+
+```{r,fig.dim= c(8,6)}
+
+# create a regression model RATS_reg
+BPRS_reg <- lm(bprs ~ week + treatment, data = BPRSL)
+
+# print out a summary of the model
+summary(BPRS_reg)
+
+```
+
+This model is not to be trusted since we know that there is very likely correlation between different measurements of the same subject. This correlation can be taken into account by a random factor.
+
+***
+
+<br /> To account for this we can use a *random intercept model*. The random component is assumed to be normally distributed and be constant in time. This allows the linear fit for each subject to differ in intercept from other subjects.
+
+```{r,fig.dim= c(8,6)}
+
+# Create a random intercept model
+BPRS_ref <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
+
+# Print the summary of the model
+summary(BPRS_ref)
+
+```
+
+The estimated stardard error of week is smaller than with the linear mixed model, which comes down to the time-correlation being taken into account. 
+This is still not good enough for us since random intercept model doesn't often represent the observed pattern of variance and correlations between measurements well in longitudinal data. 
+
+***
+
+<br /> To allow heterogeneity in both intercepts and slopes, we can use a *random intercept and random slope model*. The two random effects are assumed to have a bivariate normal distribution.
+
+```{r,fig.dim= c(8,6)}
+
+# create a random intercept and random slope model
+BPRS_ref1 <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
+
+# print a summary of the model
+summary(BPRS_ref1)
+
+# perform an ANOVA test on the two models
+anova(BPRS_ref1, BPRS_ref)
+```
+
+The p-value associated with the chi-squared statistic given by the likelihood ratio test (anova) is quite small (*), which tells about the latter model providing a better fit for the data.
+
+***
+
+<br /> Final model to make is a random intercept and random slope model that allows interaction between treatment x week. 
+
+```{r,fig.dim= c(8,6)}
+
+# create a random intercept and random slope model with the interaction
+BPRS_ref2 <- lmer(bprs ~ week + treatment + (week | treatment), data = BPRSL, REML = FALSE)
+
+# print a summary of the model
+summary(BPRS_ref2)
+
+# perform an ANOVA test on the two models - with interaction and without
+anova(BPRS_ref2, BPRS_ref1)
+```
+
+
+Here anova gives us 0 degrees of freedom, and therefore no p-value. My assumption is that the random intersept and random slope model with interaction is therefore not useful for this data.
+
+***
+
+Let's therefore use the previous model, the random intersept and random slope model, for finding fitted values and plotting them after the observed values for visual comparison.
+
+
+```{r,fig.dim= c(8,6)}
+# draw the plot of RATSL with the observed Weight values
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_x_continuous(name = "Weeks") +
+  scale_y_continuous(name = "BPRS") +
+  theme(legend.position = "none") +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both)
+
+# create a vector of the fitted values from the wanted model
+Fitted <- fitted(BPRS_ref1)
+
+# create a new column fitted to RATSL
+BPRSL <- BPRSL %>% mutate(fitted = Fitted)
+
+# draw the plot of RATSL with the Fitted values of weight
+ggplot(BPRSL, aes(x = week, y = Fitted, linetype = subject)) +
+  geom_line() +
+  scale_x_continuous(name = "Weeks") +
+  scale_y_continuous(name = "Fitted BPRS") +
+  theme(legend.position = "none") +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both)
+
+
+```
+
+I tried also plotting the fitted values based on the first model with only intersept related random effect but that leads to all the fitted lines being parallel (since no slope randomness is allowed). Then again the model including also interaction doesn't produce anything as shown earlier. In the end, the best model is definitely this one plotted here even though it is not perfect either. In general, I would conclude that the linear models are not maybe the best here, but some more complicated correlation could be found. What can be said for sure is that there is no clear evidence of either treatment working better than the other (or differently in any way for that matter).
+
+
+<br /> *Thank you for the course!*
 
 
 <br /> 
