@@ -170,7 +170,7 @@ pre code {
 <div id="week-6-analysis-of-longitudinal-data" class="section level1">
 <h1>Week 6: Analysis of longitudinal data</h1>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Wed Dec  8 20:36:27 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Thu Dec  9 14:46:23 2021&quot;</code></pre>
 <p><br /></p>
 <div id="rats-7p" class="section level2">
 <h2>1 RATS (7p)</h2>
@@ -494,50 +494,52 @@ anova(BPRS_ref1, BPRS_ref)</code></pre>
 <hr />
 <p><br /> Final model to make is a random intercept and random slope model that allows interaction between treatment x week.</p>
 <pre class="r"><code># create a random intercept and random slope model with the interaction
-BPRS_ref2 &lt;- lmer(bprs ~ week + treatment + (week | treatment), data = BPRSL, REML = FALSE)</code></pre>
+BPRS_ref2 &lt;- lmer(bprs ~ week * treatment + (week | treatment), data = BPRSL, REML = FALSE)</code></pre>
 <pre><code>## boundary (singular) fit: see ?isSingular</code></pre>
 <pre class="r"><code># print a summary of the model
 summary(BPRS_ref2)</code></pre>
 <pre><code>## Linear mixed model fit by maximum likelihood  [&#39;lmerMod&#39;]
-## Formula: bprs ~ week + treatment + (week | treatment)
+## Formula: bprs ~ week * treatment + (week | treatment)
 ##    Data: BPRSL
 ## 
 ##      AIC      BIC   logLik deviance df.resid 
-##   2843.3   2870.5  -1414.7   2829.3      353 
+##   2843.3   2874.4  -1413.7   2827.3      352 
 ## 
 ## Scaled residuals: 
 ##     Min      1Q  Median      3Q     Max 
-## -1.8252 -0.7277 -0.2586  0.5697  4.0818 
+## -1.9453 -0.7547 -0.2281  0.5304  4.1794 
 ## 
 ## Random effects:
-##  Groups    Name        Variance  Std.Dev. Corr 
-##  treatment (Intercept) 2.824e-02  0.16804      
-##            week        1.765e-03  0.04201 -1.00
-##  Residual              1.516e+02 12.31302      
+##  Groups    Name        Variance  Std.Dev.  Corr 
+##  treatment (Intercept) 2.571e-07 5.071e-04      
+##            week        6.318e-09 7.948e-05 -1.00
+##  Residual              1.508e+02 1.228e+01      
 ## Number of obs: 360, groups:  treatment, 2
 ## 
 ## Fixed effects:
-##             Estimate Std. Error t value
-## (Intercept)  46.4539     1.3664  33.996
-## week         -2.2704     0.2531  -8.971
-## treatment2    0.5722     1.2979   0.441
+##                 Estimate Std. Error t value
+## (Intercept)      47.8856     1.6876  28.376
+## week             -2.6283     0.3545  -7.415
+## treatment2       -2.2911     2.3866  -0.960
+## week:treatment2   0.7158     0.5013   1.428
 ## 
 ## Correlation of Fixed Effects:
-##            (Intr) week  
-## week       -0.741       
-## treatment2 -0.475  0.000
+##             (Intr) week   trtmn2
+## week        -0.840              
+## treatment2  -0.707  0.594       
+## wek:trtmnt2  0.594 -0.707 -0.840
 ## optimizer (nloptwrap) convergence code: 0 (OK)
 ## boundary (singular) fit: see ?isSingular</code></pre>
 <pre class="r"><code># perform an ANOVA test on the two models - with interaction and without
 anova(BPRS_ref2, BPRS_ref1)</code></pre>
 <pre><code>## Data: BPRSL
 ## Models:
-## BPRS_ref2: bprs ~ week + treatment + (week | treatment)
 ## BPRS_ref1: bprs ~ week + treatment + (week | subject)
-##           npar    AIC    BIC  logLik deviance  Chisq Df Pr(&gt;Chisq)
-## BPRS_ref2    7 2843.3 2870.5 -1414.7   2829.3                     
-## BPRS_ref1    7 2745.4 2772.6 -1365.7   2731.4 97.896  0</code></pre>
-<p>Here anova gives us 0 degrees of freedom, and therefore no p-value. My assumption is that the random intersept and random slope model with interaction is therefore not useful for this data.</p>
+## BPRS_ref2: bprs ~ week * treatment + (week | treatment)
+##           npar    AIC    BIC  logLik deviance Chisq Df Pr(&gt;Chisq)
+## BPRS_ref1    7 2745.4 2772.6 -1365.7   2731.4                    
+## BPRS_ref2    8 2843.3 2874.4 -1413.7   2827.3     0  1          1</code></pre>
+<p>Here anova gives us 1 degree of freedom, and p-value of 1. My conclusion is that the random intersept and random slope model with interaction is therefore not useful for this data.</p>
 <hr />
 <p>Let’s therefore use the previous model, the random intersept and random slope model, for finding fitted values and plotting them after the observed values for visual comparison.</p>
 <pre class="r"><code># draw the plot of RATSL with the observed Weight values

@@ -262,7 +262,7 @@ The p-value associated with the chi-squared statistic given by the likelihood ra
 ```{r,fig.dim= c(8,6)}
 
 # create a random intercept and random slope model with the interaction
-BPRS_ref2 <- lmer(bprs ~ week + treatment + (week | treatment), data = BPRSL, REML = FALSE)
+BPRS_ref2 <- lmer(bprs ~ week * treatment + (week | treatment), data = BPRSL, REML = FALSE)
 
 # print a summary of the model
 summary(BPRS_ref2)
@@ -272,7 +272,7 @@ anova(BPRS_ref2, BPRS_ref1)
 ```
 
 
-Here anova gives us 0 degrees of freedom, and therefore no p-value. My assumption is that the random intersept and random slope model with interaction is therefore not useful for this data.
+Here anova gives us 1 degree of freedom, and p-value of 1. My conclusion is that the random intersept and random slope model with interaction is therefore not useful for this data.
 
 ***
 
